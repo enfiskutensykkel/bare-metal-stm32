@@ -65,12 +65,28 @@ bss_end:       .word _bss_end
 
 /* 
  * Exceptions (standard for all Cortex-M3) 
- * See section 2.3.2 in STM32F10xxx Cortex-M3 programming manual.
- * 
+ * See section 2.3.2 in STM32F10xxx Cortex-M3 programming manual,
+ * and section 10.2.1 in STM32F101xx MCU reference manual.
+
  * This is loaded into address 0x00000000
  */
 .section .vectors
 .word stack_addr    // Top of the stack
 .word _reset        // Reset handler routine
+.word 0             // Non-maskable interrupt
+.word 0             // Hard fault
+.word 0             // Memory fault
+.word 0             // Bus fault
+.word 0             // Usage fault
+.word 0             // Reserved
+.word 0             // Reserved
+.word 0             // Reserved
+.word 0             // Reserved
+.word 0             // Supervisor call (SVCall)
+.word 0             // Debug monitor
+.word 0             // Reserved
+.word 0             // PendSV
+.word 0             // SysTick
 
-
+// Interrupts (IRQs)
+.fill 60, 4, 0

@@ -31,6 +31,11 @@ SECTIONS
     {
         _data_start = .;
         *(.data*)
+
+        /* Relocated interrupt vector table needs to be 128 byte aligned */
+        . = ALIGN(128);
+        *(.vtor)
+
         . = ALIGN(4);
         _data_end = .;
     } > ram AT > flash
@@ -38,7 +43,6 @@ SECTIONS
     /* Uninitialized data (zero'd data) */
     .bss :
     {
-        . = ALIGN(4);
         _bss_start = .;
         *(.bss)
         . = ALIGN(4);

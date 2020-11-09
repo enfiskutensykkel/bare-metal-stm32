@@ -1,12 +1,18 @@
 #include "adc.h"
 #include "gpio.h"
 #include "rcc.h"
+#include "sys.h"
 #include <stddef.h>
 #include <stdint.h>
 
-int red_pin = 12;
-int green_pin = 13;
+static int red_pin = 12;
+static int green_pin = 13;
 
+
+/*
+ * Stick the relocated vector table into its own section.
+ */
+uint32_t vtor[NUM_IRQ + OFFS_IRQ] __attribute__((section(".vtor")));
 
 
 /*
@@ -70,8 +76,62 @@ static void adc_calibrate(adc_t adc)
 }
 
 
+void irq_exti0()
+{
+    uint32_t orig = PB->odr;
+
+    for (int i = 0; i < 10; ++i) {
+        PB->odr = 1 << green_pin;
+        delay(150000);
+        PB->odr = 0 << green_pin;
+        delay(150000); 
+    }
+
+    PB->odr = orig;
+
+    EXTI->pr = 1;
+}
+
+
+static void exti_hack()
+{
+    // Try to point the vector table to RAM (hack)
+    vtor[IRQ_EXTI0 + 16] = (uint32_t) irq_exti0;
+    //vtor[IRQ_EXTI1 + 16] = (uint32_t) isr_hack;
+    SCB->vtor = (uint32_t) vtor;
+
+    // Enable input on PB0 and PB1 for buttons
+    gpio_enable(PB, 0, 2, 0);
+    gpio_enable(PB, 1, 2, 0);
+
+    // Enable AFIO clock for EXTI
+    RCC->apb2enr |= 1;
+
+    // Set external interrupt configuration
+    AFIO->exticr1 |= 0x0001;
+    //AFIO->exticr1 |= 0x0006;
+
+    // Set trigger selection (rising)
+    EXTI->rtsr |= 1;
+    //EXTI->rtsr |= 1 << 1;
+
+    // Unmask EXTI interrupts
+    EXTI->imr |= 1;
+    //EXTI->imr |= 1 << 1;
+
+
+    // Set interrupt priority (hack)
+    NVIC->ipr[6] = 0x10;
+    //NVIC->ipr[7] = 0x20;
+
+    NVIC->iser[0] = 1 << 6;
+    //NVIC->iser[0] = 1 << 7;
+}
+
+
 int main()
 {
+
     // Enable port clocks (PA + PB + PC)
     RCC->apb2enr |= (1 << 4) | (1 << 3) | (1 << 2);
 
@@ -90,6 +150,8 @@ int main()
     gpio_enable(PC, 13, 0, 2);
 
     adc_calibrate(ADC1);
+
+    exti_hack();
 
     uint16_t threshold = adc_read(ADC1, 0) >> 4;
 

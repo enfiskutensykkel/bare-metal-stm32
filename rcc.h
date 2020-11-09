@@ -7,7 +7,7 @@
 
 /*
  * Reset and clock control (RCC).
- * Section 8 in RM0008.
+ * Section 8 in STM32F103xx MCU reference manual.
  */
 REGISTER(rcc, struct {
     uint32_t cr;        // Clock control
