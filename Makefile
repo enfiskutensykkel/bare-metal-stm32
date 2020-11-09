@@ -7,7 +7,7 @@ LD := arm-none-eabi-ld
 OBJCOPY := arm-none-eabi-objcopy
 
 # Compiler flags
-CFLAGS := -Wall -Wextra -pedantic
+CFLAGS := -Wall -Wextra -pedantic -Werror=implicit-function-declaration
 CFLAGS += -mthumb -mcpu=cortex-m3
 #CFLAGS += -ffunction-sections -fdata-sections -Wl,--gc-sections -Wl,static
 
