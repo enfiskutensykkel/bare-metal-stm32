@@ -12,7 +12,7 @@ static int green_pin = 13;
 /*
  * Stick the relocated vector table into its own section.
  */
-uint32_t vtor[NUM_IRQ + OFFS_IRQ] __attribute__((section(".vtor")));
+//uint32_t vtor[NUM_IRQ + OFFS_IRQ] __attribute__((section(".vtor")));
 
 
 /*
@@ -96,9 +96,9 @@ void irq_exti0()
 static void exti_hack()
 {
     // Try to point the vector table to RAM (hack)
+    volatile uint32_t* vtor = (volatile uint32_t*) SCB->vtor;
     vtor[IRQ_EXTI0 + 16] = (uint32_t) irq_exti0;
     //vtor[IRQ_EXTI1 + 16] = (uint32_t) isr_hack;
-    SCB->vtor = (uint32_t) vtor;
 
     // Enable input on PB0 and PB1 for buttons
     gpio_enable(PB, 0, 2, 0);

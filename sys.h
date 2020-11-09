@@ -33,9 +33,9 @@ REGISTER(nvic, struct {
  * Section 4.4 in STM32F10xxx Cortex-M3 programming manual.
  */
 REGISTER(scb, struct {
-    uint32_t cpuid;         // CPUID base register
+    const uint32_t cpuid;   // CPUID base register
     uint32_t icsr;          // Interrupt control and state 
-    uint32_t vtor;          // Vector table offset
+    const uint32_t vtor;    // Vector table offset
     uint32_t aircr;         // Application interrupt and reset control
     uint32_t scr;           // System control register
     uint32_t ccr;           // Configuration and control register
@@ -43,8 +43,8 @@ REGISTER(scb, struct {
     uint32_t shcsr;         // System handler control and state
     uint32_t cfsr;          // Configurable fault status
     uint32_t hfsr;          // Hard fault status
-    uint32_t mmfar;         // Memory management fault address
-    uint32_t bfar;          // Bus fault address
+    const uint32_t mmfar;   // Memory management fault address
+    const uint32_t bfar;    // Bus fault address
 });
 
 #define SCB     ((scb_t) 0xe000ed00)

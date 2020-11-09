@@ -1,13 +1,22 @@
 STARTUP(crt0.o);
 
+/* 
+ * Define memory addresses for flash memory (ROM)
+ * and SRAM (RAM).
+ */
 MEMORY
 {
     flash (rx)  : ORIGIN = 0x08000000, LENGTH = 64K
     ram   (rwx) : ORIGIN = 0x20000000, LENGTH = 20K
 }
 
-/* PROVIDE(stack_addr = 0x20005000); */
+
+/* 
+ * In theory, the top of the stack should be at the end of memory.
+ * Not sure why it doesn't work for higher addresses.
+ */
 stack_addr = 0x20005000;
+
 
 SECTIONS
 {
@@ -15,7 +24,7 @@ SECTIONS
     . = 0x00000000;
     .text :
     {
-        *(.vectors) /* Vector table indicating stack address and entry point */
+        *(.vtor)    /* Vector table indicating stack address and entry point */
         *(.text*)   /* Code (_reset and all C code) */
         *(.rodata)  /* Read-only variables (const variables) */
         . = ALIGN(4);
@@ -34,7 +43,8 @@ SECTIONS
 
         /* Relocated interrupt vector table needs to be 128 byte aligned */
         . = ALIGN(128);
-        *(.vtor)
+        _vtor = .;
+        *(.vtor_rel)
 
         . = ALIGN(4);
         _data_end = .;
