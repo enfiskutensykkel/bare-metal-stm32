@@ -5,11 +5,10 @@ CC := arm-none-eabi-gcc
 AS := arm-none-eabi-as
 LD := arm-none-eabi-ld
 OBJCOPY := arm-none-eabi-objcopy
+ARCH := -mthumb -mcpu=cortex-m3
 
 # Compiler flags
 CFLAGS := -Wall -Wextra -pedantic -Werror=implicit-function-declaration
-CFLAGS += -mthumb -mcpu=cortex-m3
-#CFLAGS += -ffunction-sections -fdata-sections -Wl,--gc-sections -Wl,static
 
 
 # Objects
@@ -34,6 +33,11 @@ flash: $(IMG).img
 erase:
 	st-flash erase
 
+# How to assemble CRT0
+crt0.o: crt0.s
+	$(AS) -o $@ $<
+
+# How to compile source files
 %.o: %.c
-	$(CC) $(CFLAGS) -c -o $@ $<
+	$(CC) $(ARCH) $(CFLAGS) -c -o $@ $<
 

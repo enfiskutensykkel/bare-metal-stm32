@@ -4,9 +4,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-
-static int red_pin = 12;
-static int green_pin = 13;
+int red_pin = 12;
+int green_pin = 13;
 
 
 
@@ -106,7 +105,7 @@ int main()
 
         PB->odr = value;
 
-        delay(20000);
+        delay(200000);
         toggle_led();
     }
 }
