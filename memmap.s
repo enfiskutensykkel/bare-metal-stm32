@@ -5,7 +5,7 @@
 //.align 4
 
 // Export symbols
-.global SCB, NVIC, SYSTICK
+.global SCB, NVIC, STK
 .global RCC
 .global EXTI
 .global AFIO
