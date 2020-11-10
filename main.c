@@ -69,6 +69,21 @@ static void toggle_led()
 }
 
 
+static void flash(int pin, int n, int speed)
+{
+    uint32_t value = PB->odr & (1 << pin);
+
+    for (int i = 0; i < n; ++i) {
+        PB->odr &= ~(1 << pin);
+        delay(speed);
+        PB->odr |= 1 << pin;
+        delay(speed);
+    }
+
+    PB->odr |= value;
+}
+
+
 static void adc_calibrate(adc_t adc)
 {
     adc->cr2 |= 1 << 2;
@@ -78,17 +93,7 @@ static void adc_calibrate(adc_t adc)
 
 void irq_exti0()
 {
-    uint32_t orig = PB->odr;
-
-    for (int i = 0; i < 10; ++i) {
-        PB->odr = 1 << green_pin;
-        delay(150000);
-        PB->odr = 0 << green_pin;
-        delay(150000); 
-    }
-
-    PB->odr = orig;
-
+    flash(green_pin, 10, 150000);
     EXTI->pr = 1;
 }
 

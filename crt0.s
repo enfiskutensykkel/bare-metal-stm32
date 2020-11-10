@@ -48,11 +48,11 @@ relocate_vtor:
     // Relocate the IRQ vector table
     mov     r1, $0x0        // original table
     ldr     r2, vtor_addr   // relocation address
-    mov     r3, $76         // 76 vectors must be moved
+    mov     r3, (_vtor_end - _vtor_start) / 4
 
 copy_vtor:
-    ldr     r4, [r1], $1    // read word from ROM
-    str     r4, [r2], $1    // write word to RAM
+    ldr     r4, [r1], $4    // read word from ROM
+    str     r4, [r2], $4    // write word to RAM
     subs    r3, r3, $1      // decrement counter
     bgt     copy_vtor       // repeat
 
@@ -106,6 +106,7 @@ bss_end:    .word _bss_end
  * the original vtor to a new address.
  */
 .section .vtor
+_vtor_start:
 .word _stack_addr   // Top of the stack
 .word _reset        // Reset handler routine (entry point)
 .word 0             // Non-maskable interrupt
@@ -123,6 +124,7 @@ bss_end:    .word _bss_end
 .word 0             // PendSV
 .word 0             // SysTick
 .fill 60, 4, 0      // IRQs
+_vtor_end:
 
 /*
  * vtor_rel, is the relocated vector table, which is a 128-byte aligned memory
@@ -130,5 +132,5 @@ bss_end:    .word _bss_end
  * The original vtor will be copied to this address.
  */
 .section .vtor_rel
-.fill 76, 4, 0
+.fill _vtor_end - _vtor_end, 1, 0
 
