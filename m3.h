@@ -1,15 +1,14 @@
-#ifndef __STM32_F103C8_SYSTEM_H__
-#define __STM32_F103C8_SYSTEM_H__
+#ifndef __STM32_F103C8_M3_H__
+#define __STM32_F103C8_M3_H__
 
 #include <stdint.h>
-#include "register.h"
 
 
 /*
  * Nested vectored interrupt controller (NVIC)
  * Section 4.3 in STM32F10xxx Cortex-M3 programming manual.
  */
-REGISTER(nvic, struct {
+typedef volatile struct {
     uint32_t iser[3];       // Interrupt set-enable registers
     uint32_t reserved0[29]; // Reserved
     uint32_t icer[3];       // Interrupt clear-enable registers (offset 0x080)
@@ -23,16 +22,16 @@ REGISTER(nvic, struct {
     uint8_t  ipr[84];       // Interrupt priority registers (offset 0x300)
     uint32_t pad[2732];     // Padding (for SCB registers)
     uint32_t stir;          // Software trigger interrupt register
-});
+}* nvic_t;
 
-#define NVIC    ((nvic_t) 0xe000e100)
+extern nvic_t const NVIC;
 
 
 /*
  * System control block (SCB)
  * Section 4.4 in STM32F10xxx Cortex-M3 programming manual.
  */
-REGISTER(scb, struct {
+typedef volatile struct {
     const uint32_t cpuid;   // CPUID base register
     uint32_t icsr;          // Interrupt control and state 
     const uint32_t vtor;    // Vector table offset
@@ -45,9 +44,9 @@ REGISTER(scb, struct {
     uint32_t hfsr;          // Hard fault status
     const uint32_t mmfar;   // Memory management fault address
     const uint32_t bfar;    // Bus fault address
-});
+}* scb_t;
 
-#define SCB     ((scb_t) 0xe000ed00)
+extern scb_t const SCB;
 
 
 
@@ -55,14 +54,14 @@ REGISTER(scb, struct {
  * SysTick timer (STK)
  * Section 4.5 in STM32F10xxx Cortex-M3 programming manual.
  */
-REGISTER(stk, struct {
+typedef volatile struct {
     uint32_t ctrl;          // Control and status
     uint32_t load;          // Reload value
     uint32_t val;           // Current value
     uint32_t calib;         // Calibration value
-});
+}* stk_t;
 
-#define SYSTICK ((stk_t) 0xe000e010)
+extern stk_t const STK;
 
 
 /*
@@ -71,7 +70,7 @@ REGISTER(stk, struct {
  * and in 10.1.2 in STM32F103xx MCU reference manual.
  *
  * irq no < 0 = exception
- * irq no >= 0 interrupt (offset 0x40 in vector table)
+ * irq no >= 0 interrupt
  */
 typedef enum {
     IRQ_NMI                = -14,  // Non-maskable interrupt
@@ -144,9 +143,20 @@ typedef enum {
     IRQ_DMA2_Channel3      = 58,
     IRQ_DMA2_Channel4_5    = 59,
 
-    OFFS_IRQ               = 16,
-    NUM_IRQ                = 60 
+    NUM_IRQ
 } irqno_t;
 
+
+/*
+ * Convenience macro to set a custom interrupt handler / interrupt 
+ * service routine (ISR) for a given interrupt (IRQ).
+ *
+ * Interrupt handlers should have the signature:
+ *   void handler(void);
+ */
+#define vtor_set_isr(irq, isr)  \
+    do { \
+        ((void (**)(void)) SCB->vtor)[16 + (irq)] = (void (*)(void)) (isr); \
+    } while (0)
 
 #endif

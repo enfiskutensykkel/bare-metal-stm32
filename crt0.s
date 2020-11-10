@@ -1,7 +1,6 @@
 .cpu cortex-m3
 .text
 .thumb
-.code 16
 .syntax unified
 .extern main
 
@@ -11,8 +10,8 @@
  * (Entry point)
  */
 .thumb_func
+.local load_data, init_bss, zero_bss, relocate_vtor, copy_vtor
 _reset:
-
     // Everything is flashed to ROM, RAM is unitialized at this point.
     // We need to copy ROM into RAM in order to initialize variables.
     ldr     r1, data_start // address of data section
@@ -47,8 +46,9 @@ zero_bss:
 
 relocate_vtor:
     // Set SCB_VTOR to point to the relocated vector table
+    // See section 4.4.4 in the STM32F10xxx Cortex-M3 programming manual.
     ldr     r1, vtor_addr   // Table address
-    ldr     r2, scb         // SCB base address
+    ldr     r2, scb_addr    // SCB base address
     mov     r3, $0x08       // Offset to SCB_VTOR
     str     r1, [r2, r3]
 
@@ -74,14 +74,6 @@ copy_vtor:
 
 
 /*
- * Base address of the system control block (SCB)
- * We point the SCB to the relocated vector table by setting SCB_VTOR.
- * See section 4.4.4 in the STM3210xxx Cortex-M3 programming manual.
- */
-scb:        .word 0xe000ed00
-vtor_addr:  .word _vtor_addr    // filled in by the linker
-
-/*
  * Addresses filled in by the linker (see the linker script).
  *
  * We use these to calculate the size of each section:
@@ -93,11 +85,14 @@ vtor_addr:  .word _vtor_addr    // filled in by the linker
  *   - bss section contains uninitialized data that needs to 
  *     be zero'd out
  */
+.local text_end, data_start, data_end, bss_start, bss_end, vtor_addr, scb_addr
 text_end:   .word _text_end
 data_start: .word _data_start 
 data_end:   .word _data_end   
 bss_start:  .word _bss_start
 bss_end:    .word _bss_end
+vtor_addr:  .word _vtor_addr 
+scb_addr:   .word 0xe000ed00
 
 
 /* 
@@ -112,6 +107,7 @@ bss_end:    .word _bss_end
  * reset vector (entry point).
  */
 .section .vtor
+.local _vtor_start, _vtor_end
 _vtor_start:
 .word _stack_addr   // Top of the stack
 .word _reset        // Reset handler routine (entry point)
@@ -131,6 +127,7 @@ _vtor_start:
 .word 0             // SysTick
 .fill 60, 4, 0      // Interrupts (IRQs)
 _vtor_end:
+
 
 /*
  * vtor_rel is the relocated vector table, which is a 128-byte aligned memory

@@ -1,7 +1,6 @@
 #ifndef __STM32_F103C8_RCC_H__
 #define __STM32_F103C8_RCC_H__
 
-#include "register.h"
 #include <stdint.h>
 
 
@@ -9,7 +8,7 @@
  * Reset and clock control (RCC).
  * Section 8 in STM32F103xx MCU reference manual.
  */
-REGISTER(rcc, struct {
+typedef volatile struct {
     uint32_t cr;        // Clock control
     uint32_t cfgr;      // Clock configuration register
     uint32_t cir;       // Clock interrupt register
@@ -22,12 +21,8 @@ REGISTER(rcc, struct {
     uint32_t csr;       // Control/status register
     uint32_t ahbrstr;   // AHB peripheral clock resgister
     uint32_t cfgr2;     // Clock configuration register 2
-});
+}* rcc_t;
 
-
-/*
- * Reset and clock control base address.
- */
-#define RCC     ((rcc_t) 0x40021000)
+extern rcc_t RCC;
 
 #endif
