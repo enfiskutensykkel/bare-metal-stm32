@@ -12,7 +12,7 @@ CFLAGS := -Wall -Wextra -pedantic -Werror=implicit-function-declaration
 #CFLAGS += -nostdlib -nostartfiles -ffreestanding
 
 # Objects
-OBJS := crt0.o memmap.o main.o
+OBJS := crt0.o main.o
 
 # Targets
 .PHONY: all clean flash erase
@@ -36,10 +36,6 @@ erase:
 # How to assemble CRT0
 crt0.o: crt0.s
 	$(AS) -c --warn --fatal-warnings -o $@ $< 
-
-# How to assemble memory layout
-memmap.o: memmap.s
-	$(AS) -c -o $@ $<
 
 # How to compile source files
 %.o: %.c

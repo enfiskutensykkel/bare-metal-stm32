@@ -1,16 +1,50 @@
 .cpu cortex-m3
-.text
 .thumb
 .syntax unified
 .extern main
 
 
 /* 
+ * Memory map of Cortex-M3 and STM32 registers.
+ * We define them here, so that C code may use them as global variables.
+ *
+ * See section 4 in the STM32F10xxx Cortex-M3 programming manual, and
+ * section 3.3 in STM32F103xx MCU reference manual.
+ */
+.section .rodata
+.global SCB, NVIC, STK
+NVIC:   .word 0xe000e100
+STK:    .word 0xe000e010
+SCB:    .word 0xe000ed00
+
+.global RCC
+RCC:    .word 0x40021000
+
+.global EXTI
+EXTI:   .word 0x40010400
+
+.global AFIO
+AFIO:   .word 0x40010000
+
+.global PA, PB, PC, pD
+PA:     .word 0x40010800
+PB:     .word 0x40010c00
+PC:     .word 0x40011000
+PD:     .word 0x40011400
+
+.global ADC1, ADC2, ADC3
+ADC1:   .word 0x40012400
+ADC2:   .word 0x40012800
+ADC3:   .word 0x40013c00
+
+
+/* 
  * Reset handler routine.
  * (Entry point)
  */
+.text
 .thumb_func
-.local load_data, init_bss, zero_bss, relocate_vtor, copy_vtor
+.global _reset
 _reset:
     // Everything is flashed to ROM, RAM is unitialized at this point.
     // We need to copy ROM into RAM in order to initialize variables.
@@ -85,14 +119,13 @@ copy_vtor:
  *   - bss section contains uninitialized data that needs to 
  *     be zero'd out
  */
-.local text_end, data_start, data_end, bss_start, bss_end, vtor_addr, scb_addr
 text_end:   .word _text_end
 data_start: .word _data_start 
 data_end:   .word _data_end   
 bss_start:  .word _bss_start
 bss_end:    .word _bss_end
 vtor_addr:  .word _vtor_addr 
-scb_addr:   .word 0xe000ed00
+scb_addr:   .word 0xe000ed00 // Not sure why I can't use SCB here
 
 
 /* 
@@ -107,7 +140,6 @@ scb_addr:   .word 0xe000ed00
  * reset vector (entry point).
  */
 .section .vtor
-.local _vtor_start, _vtor_end
 _vtor_start:
 .word _stack_addr   // Top of the stack
 .word _reset        // Reset handler routine (entry point)
@@ -138,4 +170,3 @@ _vtor_end:
  */
 .section .vtor_rel
 .fill _vtor_end - _vtor_start, 1, 0
-
