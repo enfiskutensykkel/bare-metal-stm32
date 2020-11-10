@@ -78,7 +78,7 @@ copy_vtor:
  * See section 4.4 in the STM3210xxx Cortex-M3 programming manual.
  */
 scb:        .word 0xe000ed00
-vtor_addr:  .word _vtor
+vtor_addr:  .word _vtor_addr
 
 /*
  * Addresses filled in by the linker (see the linker script)
@@ -106,7 +106,7 @@ bss_end:    .word _bss_end
  * the original vtor to a new address.
  */
 .section .vtor
-.word stack_addr    // Top of the stack
+.word _stack_addr   // Top of the stack
 .word _reset        // Reset handler routine (entry point)
 .word 0             // Non-maskable interrupt
 .word 0             // Hard fault

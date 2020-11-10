@@ -15,7 +15,7 @@ MEMORY
  * In theory, the top of the stack should be at the end of memory.
  * Not sure why it doesn't work for higher addresses.
  */
-stack_addr = 0x20005000;
+_stack_addr = 0x20005000;
 
 
 SECTIONS
@@ -43,7 +43,7 @@ SECTIONS
 
         /* Relocated interrupt vector table needs to be 128 byte aligned */
         . = ALIGN(128);
-        _vtor = .;
+        _vtor_addr = .;
         *(.vtor_rel)
 
         . = ALIGN(4);
