@@ -7,7 +7,8 @@
 
 
 /* 
- * Entry point
+ * Reset handler routine.
+ * (Entry point)
  */
 .thumb_func
 _reset:
@@ -45,6 +46,12 @@ zero_bss:
     bgt     zero_bss        // repeat
 
 relocate_vtor:
+    // Set SCB_VTOR to point to the relocated vector table
+    ldr     r1, vtor_addr   // Table address
+    ldr     r2, scb         // SCB base address
+    mov     r3, $0x08       // Offset to SCB_VTOR
+    str     r1, [r2, r3]
+
     // Relocate the IRQ vector table
     mov     r1, $0x0        // original table
     ldr     r2, vtor_addr   // relocation address
@@ -55,12 +62,6 @@ copy_vtor:
     str     r4, [r2], $4    // write word to RAM
     subs    r3, r3, $1      // decrement counter
     bgt     copy_vtor       // repeat
-
-    // Set SCB_VTOR to point to the relocated vector table
-    ldr     r1, vtor_addr   // Table address
-    ldr     r2, scb         // SCB base address
-    mov     r3, $0x08       // Offset to SCB_VTOR
-    str     r1, [r2, r3]
 
     // Call main
     mov     r0, $0  // argc = 0
@@ -75,18 +76,22 @@ copy_vtor:
 /*
  * Base address of the system control block (SCB)
  * We point the SCB to the relocated vector table by setting SCB_VTOR.
- * See section 4.4 in the STM3210xxx Cortex-M3 programming manual.
+ * See section 4.4.4 in the STM3210xxx Cortex-M3 programming manual.
  */
 scb:        .word 0xe000ed00
-vtor_addr:  .word _vtor_addr
+vtor_addr:  .word _vtor_addr    // filled in by the linker
 
 /*
- * Addresses filled in by the linker (see the linker script)
+ * Addresses filled in by the linker (see the linker script).
+ *
  * We use these to calculate the size of each section:
- *   - text section, containing the code and read-only variables
- *   - data section, containing initialized data and 
- *     the relocated vector table (vtor_rel)
- *   - bss section, containing uninitialized data (that is zero'd out)
+ *   - text section contains the code and read-only variables
+ *
+ *   - data section contains initialized data (and also vtor_rel)
+ *     that needs to be copied from ROM
+ *
+ *   - bss section contains uninitialized data that needs to 
+ *     be zero'd out
  */
 text_end:   .word _text_end
 data_start: .word _data_start 
@@ -96,14 +101,15 @@ bss_end:    .word _bss_end
 
 
 /* 
- * Exceptions (standard for all Cortex-M3) 
+ * Exception/interrupt vector table (vtor)
+ *
  * See section 2.3.2 in STM32F10xxx Cortex-M3 programming manual,
  * and section 10.2.1 in STM32F101xx MCU reference manual.
- *
- * vtor is loaded into address 0x00000000, which the processor
- * then use to initialize the stack and jump to the reset vector (entry point).
- * The reset handler then initializes data and bss segments, before copying
- * the original vtor to a new address.
+ * 
+ * The first two entries are used for the stack pointer and reset handler
+ * routine respectively. The vtor is loaded into address 0x00000000, which 
+ * the processor then uses to initialize the stack pointer and jump to the 
+ * reset vector (entry point).
  */
 .section .vtor
 _vtor_start:
@@ -123,14 +129,16 @@ _vtor_start:
 .word 0             // Reserved
 .word 0             // PendSV
 .word 0             // SysTick
-.fill 60, 4, 0      // IRQs
+.fill 60, 4, 0      // Interrupts (IRQs)
 _vtor_end:
 
 /*
- * vtor_rel, is the relocated vector table, which is a 128-byte aligned memory
+ * vtor_rel is the relocated vector table, which is a 128-byte aligned memory
  * region reserved for software to configure interrupt routines.
- * The original vtor will be copied to this address.
+ *
+ * The original vtor needs to be copied to the address of this section, so
+ * we reserve a size equal to the size of the original vtor table.
  */
 .section .vtor_rel
-.fill _vtor_end - _vtor_end, 1, 0
+.fill _vtor_end - _vtor_start, 1, 0
 
