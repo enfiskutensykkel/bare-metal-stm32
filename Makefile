@@ -10,24 +10,23 @@ ARCH := -mthumb -mcpu=cortex-m3
 # Compiler flags
 CFLAGS := -Wall -Wextra -pedantic -Werror=implicit-function-declaration
 
-
 # Objects
 OBJS := crt0.o main.o
 
 # Targets
 .PHONY: all clean flash erase
-all: $(IMG).img
+all: $(IMG).bin
 
-$(IMG).img: $(IMG).elf
+$(IMG).bin: $(IMG).elf
 	$(OBJCOPY) -O binary $< $@
 
 $(IMG).elf: linker.ld $(OBJS)
 	$(LD) -T linker.ld -o $@ $(OBJS)
 
 clean:
-	-$(RM) $(OBJS) $(IMG).elf $(IMG).img
+	-$(RM) $(OBJS) $(IMG).elf $(IMG).bin
 
-flash: $(IMG).img
+flash: $(IMG).bin
 	st-flash --reset write $< 0x08000000
 
 erase:

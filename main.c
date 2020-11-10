@@ -99,7 +99,7 @@ static void exti_hack()
     volatile uint32_t* vtor = (volatile uint32_t*) SCB->vtor;
     vtor[IRQ_EXTI0 + 16] = (uint32_t) irq_exti0;
     //vtor[IRQ_EXTI1 + 16] = (uint32_t) isr_hack;
-
+    
     // Enable input on PB0 and PB1 for buttons
     gpio_enable(PB, 0, 2, 0);
     gpio_enable(PB, 1, 2, 0);
@@ -131,7 +131,6 @@ static void exti_hack()
 
 int main()
 {
-
     // Enable port clocks (PA + PB + PC)
     RCC->apb2enr |= (1 << 4) | (1 << 3) | (1 << 2);
 
