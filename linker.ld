@@ -76,10 +76,10 @@ scb     = 0xe000ed00;
 
 afio    = 0x40010000;
 exti    = 0x40010400;
-porta   = 0x40010800; 
-portb   = 0x40010c00;
-portc   = 0x40011000;
-portd   = 0x40011400;
+gpioa   = 0x40010800;
+gpiob   = 0x40010c00;
+gpioc   = 0x40011000;
+gpiod   = 0x40011400;
 
 adc1    = 0x40012400;
 adc2    = 0x40012800;

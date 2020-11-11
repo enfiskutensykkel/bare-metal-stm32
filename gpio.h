@@ -1,5 +1,5 @@
-#ifndef __STM32_F103C8_GPIO_H__
-#define __STM32_F103C8_GPIO_H__
+#ifndef __STM32F103C8_GPIO_H__
+#define __STM32F103C8_GPIO_H__
 
 #include <stdint.h>
 
@@ -18,13 +18,32 @@ struct gpio {
     uint32_t lckr;      // Lock register
 };
 
+
 /*
  * Available GPIO ports
- * (GPIO base addresses)
  */
-extern volatile struct gpio porta;
-extern volatile struct gpio portb;
-extern volatile struct gpio portc;
+extern volatile struct gpio gpioa;  
+extern volatile struct gpio gpiob; 
+extern volatile struct gpio gpioc;
+extern volatile struct gpio gpiod;
+
+
+/* 
+ * Short-hands for output ports
+ */
+#define out_a       gpioa.odr
+#define out_b       gpiob.odr
+#define out_c       gpioc.odr
+#define out_d       gpiod.odr
+
+
+/* 
+ * Short-hands for input ports.
+ */
+#define in_a       gpioa.idr
+#define in_b       gpiob.idr
+#define in_c       gpioc.idr
+#define in_d       gpiod.idr
 
 
 /*
@@ -39,7 +58,6 @@ struct afio {
 };
 
 extern volatile struct afio afio;
-
 
 
 /*

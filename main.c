@@ -64,39 +64,39 @@ static void delay(uint32_t x)
 
 static void toggle_led()
 {
-    portc.odr = (portc.odr & ~(1 << 13)) | ~(portc.odr & (1 << 13));
+    out_c = (out_c & ~(1 << 13)) | ~(out_c & (1 << 13));
 }
 
 
 static void flash_alternate(int n, int speed)
 {
-    uint32_t value = portb.odr & ((1 << green_pin) | (1 << red_pin));
+    uint32_t value = out_b & ((1 << green_pin) | (1 << red_pin));
 
     for (int i = 0; i < n; ++i) {
-        portb.odr &= ~(1 << green_pin);
-        portb.odr |= 1 << red_pin;
+        out_b &= ~(1 << green_pin);
+        out_b |= 1 << red_pin;
         delay(speed);
-        portb.odr &= ~(1 << red_pin);
-        portb.odr |= 1 << green_pin;
+        out_b &= ~(1 << red_pin);
+        out_b |= 1 << green_pin;
         delay(speed);
     }
 
-    portb.odr |= value;
+    out_b |= value;
 }
 
 
 static void flash_both(int n, int speed)
 {
-    uint32_t value = portb.odr & ((1 << green_pin) | (1 << red_pin));
+    uint32_t value = out_b & ((1 << green_pin) | (1 << red_pin));
 
     for (int i = 0; i < n; ++i) {
-        portb.odr &= ~((1 << green_pin) | (1 << red_pin));
+        out_b &= ~((1 << green_pin) | (1 << red_pin));
         delay(speed);
-        portb.odr |= (1 << green_pin) | (1 << red_pin);
+        out_b |= (1 << green_pin) | (1 << red_pin);
         delay(speed);
     }
 
-    portb.odr |= value;
+    out_b |= value;
 }
 
 
@@ -138,11 +138,11 @@ static void exti_init(volatile struct gpio* port, int line)
     // Set external interrupt configuration
     // See section 9.4.3 - 9.4.6
     uint32_t exticr = 0;
-    if (port == &porta) {
+    if (port == &gpioa) {
         exticr = 0x0;
-    } else if (port == &portb) {
+    } else if (port == &gpiob) {
         exticr = 0x1;
-    } else if (port == &portc) {
+    } else if (port == &gpioc) {
         exticr = 0x2;
     } else {
         // what are you doing?
@@ -175,12 +175,12 @@ int main()
     rcc.apb2enr |= 1;
 
     // Enable input on PA0
-    gpio_enable(&porta, 0, 0, 0);
+    gpio_enable(&gpioa, 0, 0, 0);
 
     // Enable LEDs
-    gpio_enable(&portb, red_pin, 0, 2);
-    gpio_enable(&portb, green_pin, 0, 2);
-    gpio_enable(&portc, 13, 0, 2);
+    gpio_enable(&gpiob, red_pin, 0, 2);
+    gpio_enable(&gpiob, green_pin, 0, 2);
+    gpio_enable(&gpioc, 13, 0, 2);
 
     // After a reset, the ADC requires calibration
     adc_calibrate(&adc1);
@@ -194,8 +194,8 @@ int main()
     irq_set_priority(IRQ_EXTI1, 2);
 
     // Set up EXTI line interrupts for pins
-    exti_init(&portb, 0);
-    exti_init(&portb, 1);
+    exti_init(&gpiob, 0);
+    exti_init(&gpiob, 1);
 
     // Take initial sample
     threshold = adc_read(&adc1, 0);
@@ -214,7 +214,7 @@ int main()
             value = 1 << green_pin;
         }
 
-        portb.odr = value;
+        out_b = value;
 
         delay(200000);
         toggle_led();
