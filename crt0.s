@@ -5,40 +5,6 @@
 
 
 /* 
- * Memory map of Cortex-M3 and STM32 registers.
- * We define them here, so that C code may use them as global variables.
- *
- * See section 4 in the STM32F10xxx Cortex-M3 programming manual, and
- * section 3.3 in STM32F103xx MCU reference manual.
- */
-.section .rodata
-.global SCB, NVIC, STK
-NVIC:   .word 0xe000e100
-STK:    .word 0xe000e010
-SCB:    .word 0xe000ed00
-
-.global RCC
-RCC:    .word 0x40021000
-
-.global EXTI
-EXTI:   .word 0x40010400
-
-.global AFIO
-AFIO:   .word 0x40010000
-
-.global PA, PB, PC, pD
-PA:     .word 0x40010800
-PB:     .word 0x40010c00
-PC:     .word 0x40011000
-PD:     .word 0x40011400
-
-.global ADC1, ADC2, ADC3
-ADC1:   .word 0x40012400
-ADC2:   .word 0x40012800
-ADC3:   .word 0x40013c00
-
-
-/* 
  * Reset handler routine.
  * (Entry point)
  */
@@ -47,7 +13,7 @@ ADC3:   .word 0x40013c00
 .global _reset
 _reset:
     // Everything is flashed to ROM, RAM is unitialized at this point.
-    // We need to copy ROM into RAM in order to initialize variables.
+    // We need to copy values from ROM into RAM in order to initialize variables.
     ldr     r1, data_start // address of data section
     ldr     r2, text_end   // end of text section
 
@@ -64,13 +30,14 @@ load_data:
 
 init_bss:
     // Initialize bss section
-    // bss contains uninitialized variables, i.e., variables set to zero
-    ldr     r1, bss_start  // address of bss section
+    // bss contains uninitialized variables, i.e., static variables 
+    // that are set to zero
+    ldr     r1, bss_start   // address of bss section
 
     // Calclulate length of section to zero out
     ldr     r3, bss_end
     subs    r3, r3, r1
-    beq     relocate_vtor   // if length = 0, skip zeroing out
+    beq     relocate_vectors // if length = 0, skip zeroing out
 
     mov     r2, $0
 zero_bss:
@@ -78,24 +45,29 @@ zero_bss:
     subs    r3, r3, $1      // decrement length
     bgt     zero_bss        // repeat
 
-relocate_vtor:
-    // Set SCB_VTOR to point to the relocated vector table
-    // See section 4.4.4 in the STM32F10xxx Cortex-M3 programming manual.
+relocate_vectors:
+    // Relocate the interrupt vector table
+    // In order for software to set up custom ISRs,
+    // we must relocate the vector table to RAM.
+    //
+    // First, set SCB_VTOR to point to the relocated vector table
+    // (see section 4.4.4 in the STM32F10xxx Cortex-M3 programming manual)
     ldr     r1, vtor_addr   // Table address
     ldr     r2, scb_addr    // SCB base address
     mov     r3, $0x08       // Offset to SCB_VTOR
     str     r1, [r2, r3]
 
-    // Relocate the IRQ vector table
+    // Then, relocate the vector table by copying each vector
+    // from the original table to the new address
     mov     r1, $0x0        // original table
     ldr     r2, vtor_addr   // relocation address
-    mov     r3, (_vtor_end - _vtor_start) / 4
+    mov     r3, (_vt_end - _vt_start) / 4
 
-copy_vtor:
+relocate:
     ldr     r4, [r1], $4    // read word from ROM
     str     r4, [r2], $4    // write word to RAM
     subs    r3, r3, $1      // decrement counter
-    bgt     copy_vtor       // repeat
+    bgt     relocate        // repeat
 
     // Call main
     mov     r0, $0  // argc = 0
@@ -125,11 +97,11 @@ data_end:   .word _data_end
 bss_start:  .word _bss_start
 bss_end:    .word _bss_end
 vtor_addr:  .word _vtor_addr 
-scb_addr:   .word 0xe000ed00 // Not sure why I can't use SCB here
+scb_addr:   .word SCB
 
 
 /* 
- * Exception/interrupt vector table (vtor)
+ * Exception/interrupt vector table
  *
  * See section 2.3.2 in STM32F10xxx Cortex-M3 programming manual,
  * and section 10.2.1 in STM32F101xx MCU reference manual.
@@ -138,9 +110,12 @@ scb_addr:   .word 0xe000ed00 // Not sure why I can't use SCB here
  * routine respectively. The vtor is loaded into address 0x00000000, which 
  * the processor then uses to initialize the stack pointer and jump to the 
  * reset vector (entry point).
+ *
+ * See the linker script for where this section is placed in memory.
  */
-.section .vtor
-_vtor_start:
+ // FIXME: use .weak and default handler so C code can override this
+.section .vt
+_vt_start:
 .word _stack_addr   // Top of the stack
 .word _reset        // Reset handler routine (entry point)
 .word 0             // Non-maskable interrupt
@@ -158,15 +133,15 @@ _vtor_start:
 .word 0             // PendSV
 .word 0             // SysTick
 .fill 60, 4, 0      // Interrupts (IRQs)
-_vtor_end:
+_vt_end:
 
 
 /*
- * vtor_rel is the relocated vector table, which is a 128-byte aligned memory
- * region reserved for software to configure interrupt routines.
+ * vtor is the relocated vector table, which is a 128-byte aligned memory
+ * region reserved for software to configure interrupt routines (ISRs).
  *
- * The original vtor needs to be copied to the address of this section, so
- * we reserve a size equal to the size of the original vtor table.
+ * The original table needs to be copied to this section, so we reserve
+ * a size equal to the size of the original vector table.
  */
-.section .vtor_rel
-.fill _vtor_end - _vtor_start, 1, 0
+.section .vtor
+.fill _vt_end - _vt_start, 1, 0 // Reserve space for the relocated table.

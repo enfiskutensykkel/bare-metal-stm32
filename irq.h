@@ -1,76 +1,15 @@
-#ifndef __STM32_F103C8_M3_H__
-#define __STM32_F103C8_M3_H__
+#ifndef __STM32F103C8_INTERRUPTS_H__
+#define __STM32F103C8_INTERRUPTS_H__
 
-#include <stdint.h>
-
-
-/*
- * Nested vectored interrupt controller (NVIC)
- * Section 4.3 in STM32F10xxx Cortex-M3 programming manual.
- */
-typedef volatile struct {
-    uint32_t iser[3];       // Interrupt set-enable registers
-    uint32_t reserved0[29]; // Reserved
-    uint32_t icer[3];       // Interrupt clear-enable registers (offset 0x080)
-    uint32_t reserved1[29]; // Reserved
-    uint32_t ispr[3];       // Interrupt set-pending registers (offset 0x100)
-    uint32_t reserved2[29]; // Reserved
-    uint32_t icpr[3];       // Interrupt clear-pending registers (offset 0x180)
-    uint32_t reserved3[29]; // Reserved
-    uint32_t iabr[3];       // Interrupt active bit registers (offset 0x200)
-    uint32_t reserved4[62]; // Reserved
-    uint8_t  ipr[84];       // Interrupt priority registers (offset 0x300)
-    uint32_t pad[2732];     // Padding (for SCB registers)
-    uint32_t stir;          // Software trigger interrupt register
-}* nvic_t;
-
-extern nvic_t const NVIC;
-
-
-/*
- * System control block (SCB)
- * Section 4.4 in STM32F10xxx Cortex-M3 programming manual.
- */
-typedef volatile struct {
-    const uint32_t cpuid;   // CPUID base register
-    uint32_t icsr;          // Interrupt control and state 
-    const uint32_t vtor;    // Vector table offset
-    uint32_t aircr;         // Application interrupt and reset control
-    uint32_t scr;           // System control register
-    uint32_t ccr;           // Configuration and control register
-    uint32_t shpr[3];       // System handler priority 
-    uint32_t shcsr;         // System handler control and state
-    uint32_t cfsr;          // Configurable fault status
-    uint32_t hfsr;          // Hard fault status
-    const uint32_t mmfar;   // Memory management fault address
-    const uint32_t bfar;    // Bus fault address
-}* scb_t;
-
-extern scb_t const SCB;
-
-
-
-/*
- * SysTick timer (STK)
- * Section 4.5 in STM32F10xxx Cortex-M3 programming manual.
- */
-typedef volatile struct {
-    uint32_t ctrl;          // Control and status
-    uint32_t load;          // Reload value
-    uint32_t val;           // Current value
-    uint32_t calib;         // Calibration value
-}* stk_t;
-
-extern stk_t const STK;
-
+#include "ppb.h"
 
 /*
  * Exception/interrupt numbers
  * Defined in 2.3.2 in STM32F10xxx Cortex-M3 programming manual,
  * and in 10.1.2 in STM32F103xx MCU reference manual.
  *
- * irq no < 0 = exception
- * irq no >= 0 interrupt
+ * IRQ no < 0 = exception
+ * IRQ no >= 0 interrupt
  */
 typedef enum {
     IRQ_NMI                = -14,  // Non-maskable interrupt
@@ -154,9 +93,38 @@ typedef enum {
  * Interrupt handlers should have the signature:
  *   void handler(void);
  */
-#define vtor_set_isr(irq, isr)  \
+#define irq_set_handler(irq, handler)  \
     do { \
-        ((void (**)(void)) SCB->vtor)[16 + (irq)] = (void (*)(void)) (isr); \
+        ((void (**)(void)) SCB.vtor)[16 + (irq)] = (void (*)(void)) (handler); \
     } while (0)
+
+
+/* 
+ * Convenience macro to enable an interrupt.
+ */
+#define irq_enable(irq) \
+    do { \
+        NVIC.iser[(irq) / 32] = 1 << ((irq) % 32); \
+    } while (0)
+
+
+/*
+ * Convenience macro to disable an interrupt.
+ */
+#define irq_disable(irq) \
+    do { \
+        NVIC.icer[(irq) / 32] = 1 << ((irq) % 32); \
+    } while (0)
+
+
+/*
+ * Convenience macro to set interrupt priority.
+ * Valid priorities = 0-255, lower value = higher priority
+ */
+#define irq_set_priority(irq, priority) \
+    do { \
+        NVIC.ipr[(irq)] = ((priority) & 0x0f) << 4; \
+    } while (0)
+
 
 #endif

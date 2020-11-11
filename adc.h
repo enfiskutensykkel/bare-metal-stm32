@@ -8,7 +8,7 @@
  * Analog-to-digital converter (ADC).
  * Section 11 in STM32F103xx MCU reference manual.
  */
-typedef volatile struct {
+struct adc {
     uint32_t sr;        // Status register
     uint32_t cr1;       // Control register 1
     uint32_t cr2;       // Control register 2
@@ -23,12 +23,14 @@ typedef volatile struct {
     uint32_t jsqr;      // Injected sequence 
     uint32_t jdr[4];    // Injected data FIXME: union
     uint32_t dr;        // Regular data 
-}* adc_t;
+};
 
 
 /*
  * Analog to digital converter base addresses
  */
-extern adc_t const ADC1;
+extern volatile struct adc ADC1;
+extern volatile struct adc ADC2;
+extern volatile struct adc ADC3;
 
 #endif

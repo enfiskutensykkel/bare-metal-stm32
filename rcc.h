@@ -8,7 +8,7 @@
  * Reset and clock control (RCC).
  * Section 8 in STM32F103xx MCU reference manual.
  */
-typedef volatile struct {
+struct rcc {
     uint32_t cr;        // Clock control
     uint32_t cfgr;      // Clock configuration register
     uint32_t cir;       // Clock interrupt register
@@ -21,8 +21,8 @@ typedef volatile struct {
     uint32_t csr;       // Control/status register
     uint32_t ahbrstr;   // AHB peripheral clock resgister
     uint32_t cfgr2;     // Clock configuration register 2
-}* rcc_t;
+};
 
-extern rcc_t RCC;
+extern volatile struct rcc RCC;
 
 #endif
