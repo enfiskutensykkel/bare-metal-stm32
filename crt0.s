@@ -2,6 +2,7 @@
 .thumb
 .syntax unified
 .extern main
+.extern scb
 
 
 /* 
@@ -97,7 +98,7 @@ data_end:   .word _data_end
 bss_start:  .word _bss_start
 bss_end:    .word _bss_end
 vtor_addr:  .word _vtor_addr 
-scb_addr:   .word SCB
+scb_addr:   .word scb
 
 
 /* 

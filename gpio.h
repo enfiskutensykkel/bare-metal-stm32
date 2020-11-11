@@ -22,9 +22,9 @@ struct gpio {
  * Available GPIO ports
  * (GPIO base addresses)
  */
-extern volatile struct gpio PA;
-extern volatile struct gpio PB;
-extern volatile struct gpio PC;
+extern volatile struct gpio porta;
+extern volatile struct gpio portb;
+extern volatile struct gpio portc;
 
 
 /*
@@ -38,7 +38,7 @@ struct afio {
     uint32_t mapr2;     // AF remap and debug I/O config 2
 };
 
-extern volatile struct afio AFIO;
+extern volatile struct afio afio;
 
 
 
@@ -55,6 +55,6 @@ struct exti {
     uint32_t pr;        // Pending register
 };
 
-extern volatile struct exti EXTI;
+extern volatile struct exti exti;
 
 #endif

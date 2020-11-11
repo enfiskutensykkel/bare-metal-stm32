@@ -55,6 +55,7 @@ static uint16_t adc_read(volatile struct adc* adc, int channel)
     return data >> 4;
 }
 
+
 static void delay(uint32_t x)
 {
     for (uint32_t i = 0; i < x; ++i);
@@ -63,39 +64,39 @@ static void delay(uint32_t x)
 
 static void toggle_led()
 {
-    PC.odr = (PC.odr & ~(1 << 13)) | ~(PC.odr & (1 << 13));
+    portc.odr = (portc.odr & ~(1 << 13)) | ~(portc.odr & (1 << 13));
 }
 
 
 static void flash_alternate(int n, int speed)
 {
-    uint32_t value = PB.odr & ((1 << green_pin) | (1 << red_pin));
+    uint32_t value = portb.odr & ((1 << green_pin) | (1 << red_pin));
 
     for (int i = 0; i < n; ++i) {
-        PB.odr &= ~(1 << green_pin);
-        PB.odr |= 1 << red_pin;
+        portb.odr &= ~(1 << green_pin);
+        portb.odr |= 1 << red_pin;
         delay(speed);
-        PB.odr &= ~(1 << red_pin);
-        PB.odr |= 1 << green_pin;
+        portb.odr &= ~(1 << red_pin);
+        portb.odr |= 1 << green_pin;
         delay(speed);
     }
 
-    PB.odr |= value;
+    portb.odr |= value;
 }
 
 
 static void flash_both(int n, int speed)
 {
-    uint32_t value = PB.odr & ((1 << green_pin) | (1 << red_pin));
+    uint32_t value = portb.odr & ((1 << green_pin) | (1 << red_pin));
 
     for (int i = 0; i < n; ++i) {
-        PB.odr &= ~((1 << green_pin) | (1 << red_pin));
+        portb.odr &= ~((1 << green_pin) | (1 << red_pin));
         delay(speed);
-        PB.odr |= (1 << green_pin) | (1 << red_pin);
+        portb.odr |= (1 << green_pin) | (1 << red_pin);
         delay(speed);
     }
 
-    PB.odr |= value;
+    portb.odr |= value;
 }
 
 
@@ -114,15 +115,15 @@ static void button_swap()
     green_pin = red_pin;
     red_pin = tmp;
 
-    EXTI.pr |= 1;
+    exti.pr |= 1;
 }
 
 
 static void button_reset()
 {
     flash_both(6, 25000);
-    threshold = adc_read(&ADC1, 0);
-    EXTI.pr |= 2;
+    threshold = adc_read(&adc1, 0);
+    exti.pr |= 2;
 }
 
 
@@ -137,52 +138,52 @@ static void exti_init(volatile struct gpio* port, int line)
     // Set external interrupt configuration
     // See section 9.4.3 - 9.4.6
     uint32_t exticr = 0;
-    if (port == &PA) {
+    if (port == &porta) {
         exticr = 0x0;
-    } else if (port == &PB) {
+    } else if (port == &portb) {
         exticr = 0x1;
-    } else if (port == &PC) {
+    } else if (port == &portc) {
         exticr = 0x2;
     } else {
         // what are you doing?
         return;
     }
 
-    AFIO.exticr[line / 4] |= exticr << (line * 4);
+    afio.exticr[line / 4] |= exticr << (line * 4);
 
     // Set trigger selection (rising)
     // section 10.3.3
-    EXTI.rtsr |= 1 << line;
+    exti.rtsr |= 1 << line;
 
     // Unmask EXTI interrupts
-    EXTI.imr |= 1 << line;
+    exti.imr |= 1 << line;
 }
 
 
 int main()
 {
     // Enable port clocks (PA + PB + PC)
-    RCC.apb2enr |= (1 << 4) | (1 << 3) | (1 << 2);
+    rcc.apb2enr |= (1 << 4) | (1 << 3) | (1 << 2);
 
     // Enable ADC1 clock
-    RCC.apb2enr |= 1 << 9;
+    rcc.apb2enr |= 1 << 9;
 
     // Power on ADC by setting ADON
-    ADC1.cr2 |= 1;
+    adc1.cr2 |= 1;
 
     // Enable AFIO clock for EXTI interrupts
-    RCC.apb2enr |= 1;
+    rcc.apb2enr |= 1;
 
     // Enable input on PA0
-    gpio_enable(&PA, 0, 0, 0);
+    gpio_enable(&porta, 0, 0, 0);
 
     // Enable LEDs
-    gpio_enable(&PB, red_pin, 0, 2);
-    gpio_enable(&PB, green_pin, 0, 2);
-    gpio_enable(&PC, 13, 0, 2);
+    gpio_enable(&portb, red_pin, 0, 2);
+    gpio_enable(&portb, green_pin, 0, 2);
+    gpio_enable(&portc, 13, 0, 2);
 
     // After a reset, the ADC requires calibration
-    adc_calibrate(&ADC1);
+    adc_calibrate(&adc1);
 
     // Set up custom EXTI interrupt vectors
     irq_set_handler(IRQ_EXTI0, button_reset);
@@ -193,11 +194,11 @@ int main()
     irq_set_priority(IRQ_EXTI1, 2);
 
     // Set up EXTI line interrupts for pins
-    exti_init(&PB, 0);
-    exti_init(&PB, 1);
+    exti_init(&portb, 0);
+    exti_init(&portb, 1);
 
     // Take initial sample
-    threshold = adc_read(&ADC1, 0);
+    threshold = adc_read(&adc1, 0);
 
     // Enable interrupts
     irq_enable(IRQ_EXTI0);
@@ -206,14 +207,14 @@ int main()
     while (1) {
         int value = (1 << red_pin) | (1 << green_pin);
 
-        uint16_t sample = adc_read(&ADC1, 0);
+        uint16_t sample = adc_read(&adc1, 0);
         if (sample < threshold) {
             value = 1 << red_pin;
         } else if (sample > threshold) {
             value = 1 << green_pin;
         }
 
-        PB.odr = value;
+        portb.odr = value;
 
         delay(200000);
         toggle_led();

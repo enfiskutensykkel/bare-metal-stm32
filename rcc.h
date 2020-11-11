@@ -23,6 +23,6 @@ struct rcc {
     uint32_t cfgr2;     // Clock configuration register 2
 };
 
-extern volatile struct rcc RCC;
+extern volatile struct rcc rcc;
 
 #endif

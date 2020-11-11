@@ -95,7 +95,7 @@ typedef enum {
  */
 #define irq_set_handler(irq, handler)  \
     do { \
-        ((void (**)(void)) SCB.vtor)[16 + (irq)] = (void (*)(void)) (handler); \
+        ((void (**)(void)) scb.vtor)[16 + (irq)] = (void (*)(void)) (handler); \
     } while (0)
 
 
@@ -104,7 +104,7 @@ typedef enum {
  */
 #define irq_enable(irq) \
     do { \
-        NVIC.iser[(irq) / 32] = 1 << ((irq) % 32); \
+        nvic.iser[(irq) / 32] = 1 << ((irq) % 32); \
     } while (0)
 
 
@@ -113,7 +113,7 @@ typedef enum {
  */
 #define irq_disable(irq) \
     do { \
-        NVIC.icer[(irq) / 32] = 1 << ((irq) % 32); \
+        nvic.icer[(irq) / 32] = 1 << ((irq) % 32); \
     } while (0)
 
 
@@ -123,7 +123,7 @@ typedef enum {
  */
 #define irq_set_priority(irq, priority) \
     do { \
-        NVIC.ipr[(irq)] = ((priority) & 0x0f) << 4; \
+        nvic.ipr[(irq)] = ((priority) & 0x0f) << 4; \
     } while (0)
 
 

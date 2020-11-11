@@ -70,19 +70,19 @@ PROVIDE(_stack_addr = 0x20005000);
  * See section 4 in the STM32F10xxx Cortex-M3 programming manual, and
  * section 3.3 in STM32F103xx MCU reference manual.
  */
-STK     = 0xe000e010;
-NVIC    = 0xe000e100;
-SCB     = 0xe000ed00;
+stk     = 0xe000e010;
+nvic    = 0xe000e100;
+scb     = 0xe000ed00;
 
-AFIO    = 0x40010000;
-EXTI    = 0x40010400;
-PA      = 0x40010800; /* GPIOA */
-PB      = 0x40010c00; /* GPIOB */
-PC      = 0x40011000; /* GPIOC */
-PD      = 0x40011400; /* GPIOD */
+afio    = 0x40010000;
+exti    = 0x40010400;
+porta   = 0x40010800; 
+portb   = 0x40010c00;
+portc   = 0x40011000;
+portd   = 0x40011400;
 
-ADC1    = 0x40012400;
-ADC2    = 0x40012800;
-ADC3    = 0x40013c00;
+adc1    = 0x40012400;
+adc2    = 0x40012800;
+adc3    = 0x40013c00;
 
-RCC     = 0x40021000;
+rcc     = 0x40021000;

@@ -29,8 +29,8 @@ struct adc {
 /*
  * Analog to digital converter base addresses
  */
-extern volatile struct adc ADC1;
-extern volatile struct adc ADC2;
-extern volatile struct adc ADC3;
+extern volatile struct adc adc1;
+extern volatile struct adc adc2;
+extern volatile struct adc adc3;
 
 #endif

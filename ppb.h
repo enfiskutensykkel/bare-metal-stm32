@@ -24,7 +24,7 @@ struct nvic {
     uint32_t stir;          // Software trigger interrupt register
 };
 
-extern volatile struct nvic NVIC;
+extern volatile struct nvic nvic;
 
 
 /*
@@ -46,7 +46,7 @@ struct scb {
     const uint32_t bfar;    // Bus fault address
 };
 
-extern volatile struct scb SCB;
+extern volatile struct scb scb;
 
 
 
@@ -61,7 +61,7 @@ struct stk {
     uint32_t calib;         // Calibration value
 };
 
-extern volatile struct stk STK;
+extern volatile struct stk stk;
 
 
 
