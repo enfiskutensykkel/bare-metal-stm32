@@ -8,7 +8,8 @@
  * General purpose I/O port (GPIO).
  * Section 9 in STM32F103xx MCU reference manual.
  */
-struct gpio {
+struct gpio 
+{
     uint32_t crl;       // Configuration low FIXME: cr union
     uint32_t crh;       // Configuration high
     uint32_t idr;       // Input data register
@@ -50,7 +51,8 @@ extern volatile struct gpio gpiod;
  * Alternate function I/O
  * Section 9.4 in STM32F103xx MCU reference manual.
  */
-struct afio {
+struct afio 
+{
     uint32_t evcr;      // Event control register
     uint32_t mapr;      // Alternate function remap and debug I/O config
     uint32_t exticr[4]; // External interrupt configuration (1-4) FIXME: union
@@ -64,7 +66,8 @@ extern volatile struct afio afio;
  * External interrupt/event (EXTI)
  * See section 10.2 in STM32F103xx MCU reference manual.
  */
-struct exti {
+struct exti 
+{
     uint32_t imr;       // Interrupt mask
     uint32_t emr;       // Event mask
     uint32_t rtsr;      // Rising trigger selection

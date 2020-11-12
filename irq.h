@@ -1,7 +1,34 @@
 #ifndef __STM32F103C8_INTERRUPTS_H__
 #define __STM32F103C8_INTERRUPTS_H__
 
-#include "ppb.h"
+#include "sys.h"
+#include <stdint.h>
+
+
+/*
+ * Nested vectored interrupt controller (NVIC)
+ * Section 4.3 in STM32F10xxx Cortex-M3 programming manual.
+ */
+struct nvic
+{
+    uint32_t iser[3];       // Interrupt set-enable registers
+    uint32_t reserved0[29]; // Reserved
+    uint32_t icer[3];       // Interrupt clear-enable registers (offset 0x080)
+    uint32_t reserved1[29]; // Reserved
+    uint32_t ispr[3];       // Interrupt set-pending registers (offset 0x100)
+    uint32_t reserved2[29]; // Reserved
+    uint32_t icpr[3];       // Interrupt clear-pending registers (offset 0x180)
+    uint32_t reserved3[29]; // Reserved
+    uint32_t iabr[3];       // Interrupt active bit registers (offset 0x200)
+    uint32_t reserved4[62]; // Reserved
+    uint8_t  ipr[84];       // Interrupt priority registers (offset 0x300)
+    uint32_t pad[2732];     // Padding (for SCB registers)
+    uint32_t stir;          // Software trigger interrupt register
+};
+
+
+extern volatile struct nvic nvic;
+
 
 /*
  * Exception/interrupt numbers
@@ -11,7 +38,8 @@
  * IRQ no < 0 = exception
  * IRQ no >= 0 interrupt
  */
-typedef enum {
+enum irqno
+{
     IRQ_NMI                = -14,  // Non-maskable interrupt
     IRQ_HardFault          = -13,  // Hard fault
     IRQ_MemManage          = -12,  // Memory access fault
@@ -83,7 +111,7 @@ typedef enum {
     IRQ_DMA2_Channel4_5    = 59,
 
     NUM_IRQ
-} irqno_t;
+};
 
 
 /*

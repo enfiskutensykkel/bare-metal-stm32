@@ -1,8 +1,7 @@
 #include "irq.h"
 #include "adc.h"
 #include "gpio.h"
-#include "rcc.h"
-#include "ppb.h"
+#include "clock.h"
 #include <stddef.h>
 #include <stdint.h>
 
@@ -52,13 +51,15 @@ static uint16_t adc_read(volatile struct adc* adc, int channel)
     uint16_t data = adc->dr & 0xffff;
 
     // Remove some granularity from sample
-    return data >> 4;
+    return data >> 9;
 }
 
 
-static void delay(uint32_t x)
+static void delay(uint32_t ms)
 {
-    for (uint32_t i = 0; i < x; ++i);
+    const uint32_t freq = 500;
+
+    for (uint32_t i = 0; i < ms * freq; ++i);
 }
 
 
@@ -102,14 +103,16 @@ static void flash_both(int n, int speed)
 
 static void adc_calibrate(volatile struct adc* adc)
 {
+    adc->cr2 |= 1 << 3;
+    while (adc->cr2 & (1 << 3));
     adc->cr2 |= 1 << 2;
-    while (!(adc->cr2 & (1 << 2)));
+    while (adc->cr2 & (1 << 2));
 }
 
 
 static void button_swap()
 {
-    flash_alternate(4, 70000);
+    flash_alternate(4, 500);
 
     int tmp = green_pin;
     green_pin = red_pin;
@@ -121,7 +124,7 @@ static void button_swap()
 
 static void button_reset()
 {
-    flash_both(6, 25000);
+    flash_both(6, 500);
     threshold = adc_read(&adc1, 0);
     exti.pr |= 2;
 }
@@ -160,8 +163,11 @@ static void exti_init(volatile struct gpio* port, int line)
 }
 
 
+
 int main()
 {
+    rcc_sysclk(CLK_HSE, 9);
+
     // Enable port clocks (PA + PB + PC)
     rcc.apb2enr |= (1 << 4) | (1 << 3) | (1 << 2);
 
@@ -216,7 +222,7 @@ int main()
 
         out_b = value;
 
-        delay(200000);
+        delay(500);
         toggle_led();
     }
 }

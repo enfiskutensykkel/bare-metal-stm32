@@ -9,7 +9,7 @@
  * Reset handler routine.
  * (Entry point)
  */
-.text
+.section .text
 .thumb_func
 .global _reset
 _reset:

@@ -10,9 +10,10 @@ ARCH := -mthumb -mcpu=cortex-m3
 # Compiler flags
 CFLAGS := -Wall -Wextra -pedantic -Werror=implicit-function-declaration 
 #CFLAGS += -nostdlib -nostartfiles -ffreestanding
+CFLAGS += -DHSE_FREQ=8000000
 
 # Objects
-OBJS := crt0.o main.o
+OBJS := crt0.o main.o clock.o
 
 # Targets
 .PHONY: all clean flash erase

@@ -8,7 +8,8 @@
  * Analog-to-digital converter (ADC).
  * Section 11 in STM32F103xx MCU reference manual.
  */
-struct adc {
+struct adc 
+{
     uint32_t sr;        // Status register
     uint32_t cr1;       // Control register 1
     uint32_t cr2;       // Control register 2
