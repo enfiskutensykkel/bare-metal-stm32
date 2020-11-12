@@ -57,9 +57,9 @@ static uint16_t adc_read(volatile struct adc* adc, int channel)
 
 static void delay(uint32_t ms)
 {
-    const uint32_t freq = 500;
-
-    for (uint32_t i = 0; i < ms * freq; ++i);
+    for (uint32_t i = 0; i < ms; ++i) {
+        while (!(systick.ctrl & (1 << 16)));
+    }
 }
 
 
@@ -112,7 +112,7 @@ static void adc_calibrate(volatile struct adc* adc)
 
 static void button_swap()
 {
-    flash_alternate(4, 500);
+    flash_alternate(6, 100);
 
     int tmp = green_pin;
     green_pin = red_pin;
@@ -124,7 +124,7 @@ static void button_swap()
 
 static void button_reset()
 {
-    flash_both(6, 500);
+    flash_both(6, 100);
     threshold = adc_read(&adc1, 0);
     exti.pr |= 2;
 }
@@ -166,7 +166,16 @@ static void exti_init(volatile struct gpio* port, int line)
 
 int main()
 {
-    rcc_sysclk(CLK_HSE, 9);
+    int clk_speed = rcc_sysclk(SYSCLK_HSE_6);
+
+    // Enable SysTick interrupts
+    // TODO: TIM5 interrupts for delay/counter
+    // TODO: events instead of interrupts (delaying in irq routine doesn't work becaus irqs block)
+    //irq_set_handler(IRQ_SysTick, systick_handler);
+    // TODO: use systick for preemptive scheduling
+    systick.load = clk_speed / 8 / 1000;
+    //systick.ctrl |= 2 | 1;
+    systick.ctrl |= 1;
 
     // Enable port clocks (PA + PB + PC)
     rcc.apb2enr |= (1 << 4) | (1 << 3) | (1 << 2);
@@ -196,8 +205,8 @@ int main()
     irq_set_handler(IRQ_EXTI1, button_swap);
 
     // Set interrupt priorities (I have no idea what I'm doing here)
-    irq_set_priority(IRQ_EXTI0, 1);
-    irq_set_priority(IRQ_EXTI1, 2);
+    irq_set_priority(IRQ_EXTI0, 2);
+    irq_set_priority(IRQ_EXTI1, 3);
 
     // Set up EXTI line interrupts for pins
     exti_init(&gpiob, 0);

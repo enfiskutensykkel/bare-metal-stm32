@@ -2,8 +2,6 @@
 #include <errno.h>
 #include "clock.h"
 
-#define HSI_FREQ    8000000
-
 #ifndef HSE_FREQ
 #define HSE_FREQ    8000000
 #endif
@@ -37,94 +35,83 @@ extern volatile uint32_t _flash;
 
 /*
  * Set system clock (and APB1 prescale if necessary)
- * TODO rcc_sysclk_hse(frequency)
- *      figure out correct multiplier by dividing by HSE_CLK
  */
-int rcc_sysclk(enum clksrc source, int multiple)
+int rcc_sysclk(enum sysclk clk)
 {
-    int freq = HSE_FREQ * multiple;
-    int ppre1 = 0;
-    int pllxptre = 0;
-    int pllsrc = 1;
-    int pllmul = 0;
-    int sw = 1;
+    int freq = 8000000; // HSI frequency
+    int hseon = 0;
+    
+    // Which clock are we going to use?
+    switch (clk & 0x3) {
+        case 0x2: // PLL
+            if (clk & (1 << 16)) {
+                // HSE is used as PLLSRC
+                freq = HSE_FREQ;
+                if (clk & (1 << 17)) {
+                    // PLLXTPRE prescale HSE for PLLSRC
+                    freq >>= 1;
+                }
+                hseon = 1;
+            } else {
+                // HSI/2 is used as PLLSRC
+                freq >>= 1;
+            }
 
-    if (!(1 < multiple && multiple <= 16)) {
-        return -EINVAL;
-    }
-
-    if (multiple > 1) {
-        sw = 2;
-        pllmul = multiple - 1;
-    }
-
-    switch (source) {
-        case CLK_HSI:
-            freq = HSI_FREQ;
-            sw = 0;
-            if (multiple > 1) {
-                return -EINVAL;
+            if (((clk >> 18) & 0xf) == 0xf) {
+                freq <<= 4;
+            } else {
+                freq *= ((clk >> 18) & 0xf) + 2;
             }
             break;
 
-        case CLK_HSE:
-            freq = HSE_FREQ * multiple;
+        case 0x1: // HSE
+            freq = HSE_FREQ;
+            hseon = 1;
             break;
 
-        case CLK_HSI_DIV:
-            freq = HSI_FREQ / 2 * multiple;
-            pllsrc = 0;
+        default: // HSI
             break;
-
-        case CLK_HSE_DIV:
-            freq = HSE_FREQ / 2 * multiple;
-            pllxptre = 1;
-            break;
-
-        default:
-            return -EINVAL;
     }
 
-    uint32_t flash_acr = (_flash & 0xffffffe0) | 1 << 4;;
+    if (freq > 72000000) {
+        return -EINVAL;
+    }
+
+    // Calculate the necessary flash memory wait states
+    uint32_t flash_acr = (_flash & 0xffffffe0) | (1 << 4);
     if (freq >= 48000000) {
         flash_acr |= 2;
     } else if (freq >= 24000000) {
         flash_acr |= 1;
     }
-
-    if (freq > 36000000) {
-        ppre1 = 1;
-    }
-
-    // Set necessary flash states
     _flash = flash_acr;
 
-    // Enable high-speed clock (HSE)
-    if (sw) {
+    // Enable HSE clock (if necessary)
+    if (hseon) {
         rcc.cr |= 1 << 16;
+        
+        // Wait until HSE becomes stable
         while (!(rcc.cr & (1 << 17)));
     }
 
-    // Set clock multiplication factor (PLLMUL)
-    rcc.cfgr |= pllmul << 18;
+    // Set clock configuration (but do not switch yet)
+    rcc.cfgr |= clk & ((0xf << 18) | (1 << 17) | (1 << 16));
 
-    // Set HSE divisor
-    rcc.cfgr |= pllxptre << 17;
+    // Do we need to prescale the APB1 clock?
+    if (freq >= 36000000) {
+        rcc.cfgr |= 1 << 10;
+    }
 
-    // Set PLL SRC
-    rcc.cfgr |= pllsrc << 16;
-
-    // Set APB1 prescale
-    rcc.cfgr |= !!ppre1 << 10;
-
-    // Enable PLL
-    if (sw == 2) {
+    // Enable PLL clock (if necessary)
+    if ((clk & 0x3) == 2) {
         rcc.cr |= 1 << 24;
+
+        // Wait until PLL becomes stable
         while (!(rcc.cr & (1 << 25)));
     }
 
     // Select SYSCLK
-    rcc.cfgr |= sw;
+    rcc.cfgr |= clk & 0x3;
 
     return freq;
 }

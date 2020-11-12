@@ -70,7 +70,7 @@ PROVIDE(_stack_addr = 0x20005000);
  * See section 4 in the STM32F10xxx Cortex-M3 programming manual, and
  * section 3.3 in STM32F103xx MCU reference manual.
  */
-stk     = 0xe000e010;
+systick = 0xe000e010;
 nvic    = 0xe000e100;
 scb     = 0xe000ed00;
 

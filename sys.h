@@ -40,7 +40,7 @@ struct stk
     uint32_t calib;         // Calibration value
 };
 
-extern volatile struct stk stk;
+extern volatile struct stk systick;
 
 
 
