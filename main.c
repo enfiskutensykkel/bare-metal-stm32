@@ -1,6 +1,7 @@
 #include "irq.h"
 #include "adc.h"
 #include "gpio.h"
+#include "usart.h"
 #include "clock.h"
 #include <stddef.h>
 #include <stdint.h>
@@ -218,6 +219,22 @@ int main()
     // Enable interrupts
     irq_enable(IRQ_EXTI0);
     irq_enable(IRQ_EXTI1);
+
+    // Enable USART2 clock
+    rcc.apb1enr |= 1 << 17;
+
+    // Set PA9 to RX and PA10 to TX
+    gpio_enable(&gpioa, 9, 2, 0);
+    gpio_enable(&gpioa, 10, 2, 3);
+
+    // Test UART transmit
+    usart2.cr1 |= 1 << 13; // USART enable
+    usart2.cr1 |= 0 << 12; // 8 data bits
+    usart2.cr1 |= 0 << 9;  // Even parity
+    usart2.cr2 |= 2 << 12; // 2 stop bits
+
+    flash_alternate(20, 100);
+
 
     while (1) {
         int value = (1 << red_pin) | (1 << green_pin);
