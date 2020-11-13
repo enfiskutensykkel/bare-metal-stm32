@@ -11,6 +11,24 @@ static int green_pin = 13;
 static volatile uint16_t threshold; // Potentiometer threshold value
 
 
+
+static void uart_send(volatile struct usart* usart, const char* str)
+{
+    usart->cr1 |= 0 << 3;
+    usart->cr1 |= 1 << 3;
+
+    const char* p = str;
+    while (*p != '\0') {
+        while (!(usart->sr & (1 << 7)));
+        usart->dr = *p;
+        ++p;
+    }
+
+    while (!(usart->sr & (1 << 6)));
+}
+
+
+
 /*
  * Set configuration for specified GPIO pin.
  * See section 9.2.1 and 9.2.2
@@ -113,21 +131,23 @@ static void adc_calibrate(volatile struct adc* adc)
 
 static void button_swap()
 {
-    flash_alternate(6, 100);
-
     int tmp = green_pin;
     green_pin = red_pin;
     red_pin = tmp;
-
     exti.pr |= 1;
+
+    uart_send(&usart1, "swap\r\n");
+    flash_alternate(6, 100);
 }
 
 
 static void button_reset()
 {
-    flash_both(6, 100);
     threshold = adc_read(&adc1, 0);
     exti.pr |= 2;
+
+    uart_send(&usart1, "reset\r\n");
+    flash_both(6, 100);
 }
 
 
@@ -164,19 +184,29 @@ static void exti_init(volatile struct gpio* port, int line)
 }
 
 
+void systick_handler(void)
+{
+    static int ms = 0;
+
+    if (++ms == 1000) {
+        uart_send(&usart1, "second\r\n");
+        ms = 0;
+    }
+}
+
 
 int main()
 {
-    int clk_speed = rcc_sysclk(SYSCLK_HSE_6);
+    int clk_speed = rcc_sysclk(SYSCLK_HSE_9);
 
     // Enable SysTick interrupts
     // TODO: TIM5 interrupts for delay/counter
     // TODO: events instead of interrupts (delaying in irq routine doesn't work becaus irqs block)
-    //irq_set_handler(IRQ_SysTick, systick_handler);
+    irq_set_handler(IRQ_SysTick, systick_handler);
     // TODO: use systick for preemptive scheduling
     systick.load = clk_speed / 8 / 1000;
-    //systick.ctrl |= 2 | 1;
-    systick.ctrl |= 1;
+    systick.ctrl |= 2 | 1;
+    //systick.ctrl |= 1;
 
     // Enable port clocks (PA + PB + PC)
     rcc.apb2enr |= (1 << 4) | (1 << 3) | (1 << 2);
@@ -221,20 +251,22 @@ int main()
     irq_enable(IRQ_EXTI1);
 
     // Enable USART2 clock
-    rcc.apb1enr |= 1 << 17;
+    //rcc.apb1enr |= 1 << 17;
+    rcc.apb2enr |= 1 << 14;
 
-    // Set PA9 to RX and PA10 to TX
-    gpio_enable(&gpioa, 9, 2, 0);
-    gpio_enable(&gpioa, 10, 2, 3);
+    // Set PA9 to TX and PA10 to RX
+    // Ref section 9.1.11
+    //gpio_enable(&gpioa, 10, 2, 0);
+    gpio_enable(&gpioa, 9, 2, 3);
 
     // Test UART transmit
-    usart2.cr1 |= 1 << 13; // USART enable
-    usart2.cr1 |= 0 << 12; // 8 data bits
-    usart2.cr1 |= 0 << 9;  // Even parity
-    usart2.cr2 |= 2 << 12; // 2 stop bits
+    usart1.cr1 |= 1 << 13; // USART enable
+    usart1.cr1 |= 0 << 12; // 8 data bits
+    usart1.cr1 |= 0 << 9;  // Even parity
+    usart1.cr2 |= 2 << 12; // 2 stop bits
+    usart1.brr = clk_speed / 115200;    // Baud rate 115200
 
-    flash_alternate(20, 100);
-
+    flash_alternate(5, 100);
 
     while (1) {
         int value = (1 << red_pin) | (1 << green_pin);
@@ -248,7 +280,7 @@ int main()
 
         out_b = value;
 
-        delay(500);
+        delay(250);
         toggle_led();
     }
 }

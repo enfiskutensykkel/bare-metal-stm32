@@ -23,6 +23,7 @@ struct usart
 /*
  * Available USARTs
  */ 
+extern volatile struct usart usart1;
 extern volatile struct usart usart2;
 
 #endif
