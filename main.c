@@ -28,26 +28,6 @@ static void uart_send(volatile struct usart* usart, const char* str)
 }
 
 
-
-/*
- * Set configuration for specified GPIO pin.
- * See section 9.2.1 and 9.2.2
- */
-static void gpio_enable(volatile struct gpio* port, int pin, int cnf, int mode)
-{
-    int y = pin;
-    volatile uint32_t* cr = &port->crl;
-    
-    if (pin >= 8) {
-        y = pin - 8;
-        cr = &port->crh;
-    }
-
-    *cr &= ~(0xf << (y * 4));
-    *cr |= (cnf << (y * 4 + 2)) | (mode << (y * 4));
-}
-
-
 /*
  * Read analog value.
  */
@@ -151,39 +131,6 @@ static void button_reset()
 }
 
 
-/*
- * Enable external line interrupt.
- */
-static void exti_init(volatile struct gpio* port, int line)
-{
-    // Enable input on pin
-    gpio_enable(port, line, 2, 0);
-
-    // Set external interrupt configuration
-    // See section 9.4.3 - 9.4.6
-    uint32_t exticr = 0;
-    if (port == &gpioa) {
-        exticr = 0x0;
-    } else if (port == &gpiob) {
-        exticr = 0x1;
-    } else if (port == &gpioc) {
-        exticr = 0x2;
-    } else {
-        // what are you doing?
-        return;
-    }
-
-    afio.exticr[line / 4] |= exticr << (line * 4);
-
-    // Set trigger selection (rising)
-    // section 10.3.3
-    exti.rtsr |= 1 << line;
-
-    // Unmask EXTI interrupts
-    exti.imr |= 1 << line;
-}
-
-
 void systick_handler(void)
 {
     static int ms = 0;
@@ -221,12 +168,12 @@ int main()
     rcc.apb2enr |= 1;
 
     // Enable input on PA0
-    gpio_enable(&gpioa, 0, 0, 0);
+    gpio_cfg(&gpioa, 0, GPIO_ANALOG, GPIO_INPUT);
 
     // Enable LEDs
-    gpio_enable(&gpiob, red_pin, 0, 2);
-    gpio_enable(&gpiob, green_pin, 0, 2);
-    gpio_enable(&gpioc, 13, 0, 2);
+    gpio_cfg(&gpiob, red_pin, GPIO_PUSHPULL, GPIO_2MHZ);
+    gpio_cfg(&gpiob, green_pin, GPIO_PUSHPULL, GPIO_2MHZ);
+    gpio_cfg(&gpioc, 13, GPIO_PUSHPULL, GPIO_2MHZ);
 
     // After a reset, the ADC requires calibration
     adc_calibrate(&adc1);
@@ -240,8 +187,8 @@ int main()
     irq_set_priority(IRQ_EXTI1, 3);
 
     // Set up EXTI line interrupts for pins
-    exti_init(&gpiob, 0);
-    exti_init(&gpiob, 1);
+    exti_enable(&gpiob, 0, EXTI_TRIGGER_RISING);
+    exti_enable(&gpiob, 1, EXTI_TRIGGER_RISING);
 
     // Take initial sample
     threshold = adc_read(&adc1, 0);
@@ -257,7 +204,7 @@ int main()
     // Set PA9 to TX and PA10 to RX
     // Ref section 9.1.11
     //gpio_enable(&gpioa, 10, 2, 0);
-    gpio_enable(&gpioa, 9, 2, 3);
+    gpio_cfg(&gpioa, 9, GPIO_AFIO | GPIO_PUSHPULL, GPIO_50MHZ);
 
     // Test UART transmit
     usart1.cr1 |= 1 << 13; // USART enable

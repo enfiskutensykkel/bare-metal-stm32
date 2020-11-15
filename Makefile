@@ -19,7 +19,7 @@ CFLAGS += -DHSE_FREQ=8000000
 CFLAGS += -g
 
 # Objects
-OBJS := crt0.o main.o clock.o
+OBJS := crt0.o main.o clock.o gpio.o
 
 # Targets
 .PHONY: all clean flash erase

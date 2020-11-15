@@ -73,9 +73,11 @@ int rcc_sysclk(enum sysclk clk)
             break;
     }
 
+#ifndef NDEBUG
     if (freq > 72000000) {
         return -EINVAL;
     }
+#endif
 
     // Calculate the necessary flash memory wait states
     uint32_t flash_acr = (_flash & 0xffffffe0) | (1 << 4);
